@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Pulse - Live Feed & Tweet Composer</title>
+    <meta name="description" content="Stay up-to-date with Google Cloud BigQuery releases. Search, filter by category, and easily share specific updates on X (Twitter).">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dark-theme">
+    <!-- Background glow elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-logo">
+                <!-- Glowing database spark icon -->
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="sparkle-icon">
+                    <path d="M12 2L14.8 8.4L21.2 9.8L16.3 14.3L17.9 20.8L12 17.2L6.1 20.8L7.7 14.3L2.8 9.8L9.2 8.4L12 2Z" fill="url(#sparkleGradient)" />
+                    <defs>
+                        <linearGradient id="sparkleGradient" x1="2" y1="2" x2="21.2" y2="20.8" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#3b82f6" />
+                            <stop offset="0.5" stop-color="#8b5cf6" />
+                            <stop offset="1" stop-color="#ec4899" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="header-text">
+                    <h1 id="app-title">BigQuery Release Pulse</h1>
+                    <p class="subtitle">Track real-time Google Cloud BigQuery updates and share them on social media</p>
+                </div>
+            </div>
+            
+            <div class="header-meta">
+                <span class="status-badge" id="sync-status">
+                    <span class="status-dot"></span>
+                    <span id="sync-status-text">Checking...</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- Control Panel Section -->
+        <section class="controls-panel" id="controls-panel">
+            <div class="search-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search releases by keyword (e.g. Gemini, partitioning...)" autocomplete="off">
+                <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="filter-actions-row">
+                <!-- Category Tags -->
+                <div class="category-filters" id="category-filters-container">
+                    <button class="filter-btn active" data-category="all" id="filter-btn-all">
+                        All <span class="filter-count" id="count-all">0</span>
+                    </button>
+                    <button class="filter-btn" data-category="Feature" id="filter-btn-feature">
+                        Features <span class="filter-count" id="count-feature">0</span>
+                    </button>
+                    <button class="filter-btn" data-category="Announcement" id="filter-btn-announcement">
+                        Announcements <span class="filter-count" id="count-announcement">0</span>
+                    </button>
+                    <button class="filter-btn" data-category="Issue" id="filter-btn-issue">
+                        Issues <span class="filter-count" id="count-issue">0</span>
+                    </button>
+                    <button class="filter-btn" data-category="Other" id="filter-btn-other">
+                        Other <span class="filter-count" id="count-other">0</span>
+                    </button>
+                </div>
+
+                <!-- Refresh Button -->
+                <button class="btn btn-primary refresh-btn" id="refresh-feed-btn" title="Fetch latest release notes">
+                    <svg class="refresh-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="refresh-spinner-icon">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Loading Skeleton (Shown during fetch) -->
+            <div class="skeleton-container" id="skeleton-loader" style="display: none;">
+                <div class="skeleton-day-card">
+                    <div class="skeleton-header"></div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-badge"></div>
+                        <div class="skeleton-paragraph"></div>
+                        <div class="skeleton-paragraph short"></div>
+                    </div>
+                </div>
+                <div class="skeleton-day-card">
+                    <div class="skeleton-header"></div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-badge"></div>
+                        <div class="skeleton-paragraph"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Content -->
+            <div class="feed-container" id="releases-feed">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Empty State / No Results -->
+            <div class="empty-state-card" id="empty-state" style="display: none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <h3>No release notes match your filters</h3>
+                <p>Try clearing your search query or choosing another category category.</p>
+                <button class="btn btn-secondary" id="reset-filters-btn">Reset Filters & Search</button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 BigQuery Release Pulse. Powered by Google Cloud RSS Feed.</p>
+        </footer>
+    </div>
+
+    <!-- TWEET COMPOSER MODAL (Premium Glassmorphic Modal) -->
+    <div class="modal-overlay" id="tweet-modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+        <div class="modal-container">
+            <button class="modal-close-btn" id="close-modal-btn" aria-label="Close modal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            
+            <h2 id="modal-title" class="modal-title">Compose & Post Update</h2>
+            <p class="modal-subtitle">Review, edit, and publish this update to your audience on X / Twitter.</p>
+
+            <div class="modal-content-grid">
+                <!-- Editor Pane -->
+                <div class="composer-editor">
+                    <label for="tweet-textarea" class="composer-label">Edit Tweet Text</label>
+                    <textarea id="tweet-textarea" placeholder="What's happening?" rows="6"></textarea>
+                    
+                    <div class="composer-meta-row">
+                        <div class="character-count-wrapper">
+                            <span id="char-count">0</span> / 280
+                            <div class="progress-ring-container">
+                                <svg class="progress-ring" width="24" height="24">
+                                    <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="transparent" r="10" cx="12" cy="12"/>
+                                    <circle class="progress-ring__circle" id="progress-indicator" stroke="#3b82f6" stroke-width="2" fill="transparent" r="10" cx="12" cy="12"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="composer-warning" id="length-warning" style="display: none;">
+                            Text exceeds the standard 280 characters.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Pane (Twitter / X Mock Card) -->
+                <div class="composer-preview">
+                    <div class="preview-label">Live Preview (Dark Mode)</div>
+                    <div class="twitter-card">
+                        <div class="twitter-header">
+                            <div class="twitter-avatar">
+                                <!-- Sparkly logo avatar -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L14.8 8.4L21.2 9.8L16.3 14.3L17.9 20.8L12 17.2L6.1 20.8L7.7 14.3L2.8 9.8L9.2 8.4L12 2Z" fill="#3b82f6"/>
+                                </svg>
+                            </div>
+                            <div class="twitter-author-info">
+                                <span class="twitter-name">BigQuery Release Pulse</span>
+                                <span class="twitter-handle">@BigQueryUpdates</span>
+                            </div>
+                            <svg class="twitter-logo" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                        </div>
+                        <div class="twitter-body" id="twitter-preview-text">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div class="twitter-footer">
+                            <span id="mock-tweet-time">June 2026</span> &middot; Release Pulse Bot
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-tweet-btn">Cancel</button>
+                <button class="btn btn-primary tweet-action-btn" id="publish-tweet-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="btn-icon">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Tweet on X</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
