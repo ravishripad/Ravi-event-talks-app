@@ -156,3 +156,10 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local organization folders and scripts
+Images/
+Documents/
+Videos/
+organize.ps1
+
